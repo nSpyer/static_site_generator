@@ -1,9 +1,10 @@
 import unittest
-from htmlnode import HTMLNode
+from htmlnode import HTMLNode, LeafNode, ParentNode
 
 
 class TestHTMLNode(unittest.TestCase):
-
+    
+    #HTMLNode tests--------------------
     # test props_to_html with multiple props
         #assert the returned string matches expected format
     def test_all_props(self):
@@ -61,4 +62,62 @@ class TestHTMLNode(unittest.TestCase):
         node = HTMLNode("tag text", "value text")
         with self.assertRaises(NotImplementedError):
             node.to_html()
+    
 
+
+    #LeafNode Tests----------------
+    #tests a simple bit of paragraph text formatting
+    def test_leaf_to_html_p(self):
+        node = LeafNode("p", "Hello, world!")
+        self.assertEqual(node.to_html(),"<p>Hello, world!</p>")
+
+    #test a tag with props
+    def test_tag_with_props_to_html(self):
+        node = LeafNode("a", "Click me!", {"href": "https://www.google.com"} )
+        self.assertEqual(node.to_html(), '<a href="https://www.google.com">Click me!</a>')
+
+    # test raw text with no tag converted to HTML with LeafNode
+    def test_raw_text_w_no_tag(self):
+        node = LeafNode(None, "just text")
+        self.assertEqual(node.to_html(), "just text")
+
+    # missing value raises an Error
+    def test_missing_value_raises_value_error(self):
+        node = LeafNode("tag", None)
+        with self.assertRaises(ValueError):
+            node.to_html()
+
+    # test different HTML tags.... <b>, <h1>, <i>
+
+    #ParentNode tests -------------
+    #tests html conversion of a parent node with one child
+    def test_to_html_with_children(self):
+        child_node = LeafNode("span", "child")
+        parent_node = ParentNode("div", [child_node])
+        self.assertEqual(parent_node.to_html(), "<div><span>child</span></div>")
+    
+    #tests html conversion of a parent_node with one child which has one child
+    def test_to_html_with_grandchildren(self):
+        grandchild_node = LeafNode("b", "grandchild")
+        child_node = ParentNode("span", [grandchild_node])
+        parent_node = ParentNode("div", [child_node])
+        self.assertEqual(
+            parent_node.to_html(),
+            "<div><span><b>grandchild</b></span></div>",
+        )
+
+    #test html conversion of a parent_node with multiple children
+
+    #test html conversion of a parent_node with a great grandchild
+
+    #test html conversion of a parent_node with both LeafNode and ParentNode
+    # instances as direct siblings in its children
+    
+    #missing tag validation - verify that calling .to_html() raises a ValueError when
+    #tag is None or an empty string using assertRaises(ValueError)
+
+    #missing children validation = verify calling .to_html() raises a ValueError when
+    # children is None
+
+    # nodes w/ props - a parentnode initialized with a props dict
+    # ensures HTML attributes render correclty on the parent tag alongside its children
