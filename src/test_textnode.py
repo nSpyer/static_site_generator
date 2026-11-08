@@ -1,5 +1,5 @@
 import unittest
-from textnode import TextNode, TextType
+from textnode import TextNode, TextType, text_node_to_html_node
 
 
 class TestTextNode(unittest.TestCase):
@@ -29,6 +29,45 @@ class TestTextNode(unittest.TestCase):
     def test_uneq_repr(self):
         node = TextNode("This is a text node", TextType.PLAIN, "https://www.boot.dev")
         node2 = TextNode("This is a text node", TextType.PLAIN, "https://www.boot.dev")
+
+class TestTextNodeToHTMLNode(unittest.TestCase):
+    
+    #TextType.PLAIN -> LeafNode(None, text)
+    def test_plain_text(self):
+        node = TextNode("This is a text node", TextType.PLAIN)
+        html_node = text_node_to_html_node(node)
+        self.assertEqual(html_node.tag, None)
+        self.assertEqual(html_node.value, "This is a text node")
+    
+    # TextType.Bold -> LeafNode("b", text)
+    def test_bold(self):
+    # TODO: TextType.BOLD -> LeafNode("b", text)
+        pass
+
+    def test_italic(self):
+        # TODO: TextType.ITALIC -> LeafNode("i", text)
+        pass
+
+    def test_code(self):
+        # TODO: TextType.CODE -> LeafNode("code", text)
+        pass
+
+    def test_link(self):
+        # TODO: TextType.LINK -> LeafNode("a", anchor_text, {"href": url})
+        # check html_node.props["href"] == url
+        pass
+
+    def test_image(self):
+        # TODO: TextType.IMAGE -> LeafNode("img", "", {"src": url, "alt": alt_text})
+        # check html_node.value == "" and props contain both src and alt
+        pass
+
+    def test_invalid_type_raises(self):
+        # TODO: construct a TextNode-like object/mock with an invalid text_type
+        # or monkeypatch text_type, assert raises Exception
+        pass
+
+
 
 if __name__ == "__main__":
     unittest.main()
