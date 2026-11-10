@@ -6,20 +6,20 @@ def split_nodes_delimiter(old_nodes: list[TextNode], delimiter: str, text_type: 
     new_nodes := []
 
     for node in old_nodes:
-        if node.text_type is not TextType.PLAIN:
-            new_nodes = new_nodes.append(node)
-            contine
-        split_node := node.text.split(delimiter)
-        if len(split_node) % 2 is 0:
-            raiseException("delimiter error: matching closing delimiter not found")
+        if node.text_type != TextType.PLAIN:
+            new_nodes.append(node)
+            continue
+        split_node = node.text.split(delimiter)
+        if len(split_node) % 2 == 0:
+            raise Exception("delimiter error: matching closing delimiter not found")
             # even indexed strings become TextNode(string, TextType.PLAIN)
         for i in range(len(split_node)):
             if i % 2 == 0:
-                node_i := TextNode(split_node[i], TextType.PLAIN)
-                new_nodes = new_nodes.append(node_i)
+                node_i = TextNode(split_node[i], TextType.PLAIN)
+                new_nodes.append(node_i)
             else:
                 # odd indexed strings become TextNode(string, text_type)
-                node_i := TextNode(split_node[i], text_type)
-                new_nodes = new_nodes.append(node_i)
+                node_i = TextNode(split_node[i], text_type)
+                new_nodes.append(node_i)
 
     return new_nodes
