@@ -1,24 +1,25 @@
-
-
+# create TextNodes from raw markdown strings.
+# Takes a list of TextNodes, a delimiter specifier for **bold**, _italic_, or `code`, and
+# a target text_type to match the delimiter.  returns a new list of TextNodes
+# does not support nested inline elements (e.g. bold AND italic)
 def split_nodes_delimiter(old_nodes: list[TextNode], delimiter: str, text_type: TextType) -> list[TextNode]:
-    pass
-    
-    #create an empty list to build the return value, which will be extended with each
-    #iterative loop using .extend()
+    new_nodes := []
 
-    #loop over each node in old_nodes list
-         #if old node is NOT a TextType.PLAIN, add it "as is" to the return list
-            # use continue so it doesn't get split
-
-        #split the text of the node with .split() into a new list
-            # if a matching closing delimiter is not found (aka len(list) % 2 == 0)
-                # raise exception with helpful error message
+    for node in old_nodes:
+        if node.text_type is not TextType.PLAIN:
+            new_nodes = new_nodes.append(node)
+            contine
+        split_node := node.text.split(delimiter)
+        if len(split_node) % 2 is 0:
+            raiseException("delimiter error: matching closing delimiter not found")
             # even indexed strings become TextNode(string, TextType.PLAIN)
-            # odd indexed strings become TextNode(string, text_type)
-        
-        #loop over the list of nodes just created
-            #if the list member is an empty string, do nothing
-            #if it is not an empty string, extend the return list with that member's node
+        for i in range(len(split_node)):
+            if i % 2 == 0:
+                node_i := TextNode(split_node[i], TextType.PLAIN)
+                new_nodes = new_nodes.append(node_i)
+            else:
+                # odd indexed strings become TextNode(string, text_type)
+                node_i := TextNode(split_node[i], text_type)
+                new_nodes = new_nodes.append(node_i)
 
-
-    #return new list of nodes
+    return new_nodes
