@@ -1,9 +1,11 @@
+from textnode import TextNode, TextType
+
 # create TextNodes from raw markdown strings.
 # Takes a list of TextNodes, a delimiter specifier for **bold**, _italic_, or `code`, and
 # a target text_type to match the delimiter.  returns a new list of TextNodes
 # does not support nested inline elements (e.g. bold AND italic)
 def split_nodes_delimiter(old_nodes: list[TextNode], delimiter: str, text_type: TextType) -> list[TextNode]:
-    new_nodes := []
+    new_nodes = []
 
     for node in old_nodes:
         if node.text_type != TextType.PLAIN:
