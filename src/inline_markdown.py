@@ -16,12 +16,8 @@ def split_nodes_delimiter(old_nodes: list[TextNode], delimiter: str, text_type: 
 
         #split the plaintext with the supplied delimiter
         split_node = node.text.split(delimiter)
-
-        #because of the way split() works with delimiters, it creates an empty string "" at the beginning
-        # of a plaintext string when the first word is wrapped in the delimiter
-        # the same happens if the last word is wrapped in the delimiter, but with the empty
-        # string at the end of the word.  thus a correctly split node will always have an odd number
-        # of nodes
+ 
+        # a correctly split node will always have an odd number of text strings in the list before empty strings are pruned
         if len(split_node) % 2 == 0:
             raise Exception("delimiter error: matching closing delimiter not found")
             
@@ -29,41 +25,37 @@ def split_nodes_delimiter(old_nodes: list[TextNode], delimiter: str, text_type: 
             # even indexed strings become TextNode(string, TextType.PLAIN)
         for i in range(len(split_node)):
             if i % 2 == 0:
-                node_i = TextNode(split_node[i], TextType.PLAIN)
-                new_nodes.append(node_i)
+                if split_node[i] != "":
+                    node_i = TextNode(split_node[i], TextType.PLAIN)
+                    new_nodes.append(node_i)
             else:
                 # odd indexed strings become TextNode(string, text_type)
-                node_i = TextNode(split_node[i], text_type)
-                new_nodes.append(node_i)
+                if split_node[i] != "":
+                    node_i = TextNode(split_node[i], text_type)
+                    new_nodes.append(node_i)
 
     return new_nodes
 
 # regex matches for image format: ![alt text](url)
-# the return at index 0 of matches is the alt text
-# the return at index 1 of matches is the url
-def extract_markdown_images(text: str) -> list(str):
+def extract_markdown_images(text: str) -> list(tuple[str, str]):
     matches = re.findall(r"!\[([^\[\]]*)\]\(([^\(\)]*)\)", text)
     return matches
 
 #regex matches for text link format: [anchor text](url)
-# the return at index 0 of matches is the anchor text
-# the return at index 1 of matches is the url
-def extract_markdown_links(text: str) -> list(str):
+def extract_markdown_links(text: str) -> list(tuple[str, str]):
     matches = re.findall(r"(?<!!)\[([^\[\]]*)\]\(([^\(\)]*)\)", text)
     return matches
 
-#splits raw markdown into TextNodes based on images
+# Splits raw markdown into TextNodes based on images
+# Images in markdown follow ![alt text](url)
 def split_nodes_image(old_nodes: list[TextNode]) -> list[TextNode]:
-
-    #it will work kind of like the split_nodes_delimiter function, but with the extraction function
-    #use extract_markdown_images(old_node.text) in a loop
-    #images in markdown follow ![alt text](url)
-
     new_nodes = []
     for node in old_nodes:
+        remaining_text = node.text
+        images = extract_markdown_images(remaining_text)
 
         #if no image, return a list with the original node in it
-        if extract_markdown_images(node.text) == "":
+        if len(images) == 0:
             new_nodes.append(node)
             continue
 
@@ -72,31 +64,73 @@ def split_nodes_image(old_nodes: list[TextNode]) -> list[TextNode]:
             new_nodes.append(node)
             continue
 
-        md_delimiter = extract_markdown_images(node.text) #this is wrong, it is an array of text, url
-        #the delimiter markdown has to be assembled
-        split_node = node.text.split(f"{md_delimiter}", 1) #this will return everything around the markdown assembled
+        for image in images:
+            alt_text = image[0]
+            url = image[1]
+            md_delimiter = f"![{alt_text}]({url})" #the delimiter markdown has to be assembled
+            split_node = remaining_text.split(f"{md_delimiter}", 1) #this will return everything around the markdown, length is always 2
 
-    # the extraction extracts the markdown link, then split() can be used with that markdown as
-    # the delimiter, thus splitting the text before and after it so that it can be placed on either end
-    # of the new node created and appended.  that means split_nodes's length should always be 2, ranging from
-    # index[0] to index[1]
-    #
-    # index[0] can be added to the new_nodes array, but NOT index[1], else that will mess up the order
-    #
-    # the new image node should be created
-    #   node_ i = TextNode(node.text, node.IMAGE, node.url)
-    #
-    #then node_i gets appended to new_nodes
-    
-    #then index[1]is appended
+            # create and add node for text before markdown delimiter
+            if split_node[0] != "":
+                node_h = TextNode(split_node[0], TextType.PLAIN)
+                new_nodes.append(node_h)
+            # create and append new image node
+            node_i = TextNode(alt_text, TextType.IMAGE, url)
+            new_nodes.append(node_i)
+            remaining_text = split_node[1]
 
+    # append remaining_text if it exists
+        if remaining_text != "":
+            node_j = TextNode(remaining_text, TextType.PLAIN)
+            new_nodes.append(node_j)
 
-    #
-    #if no image, return a list with the original node in it
-    #don't append any TextNodes that have empty text to the final list
+    return new_nodes
 
-#splits raw markdown into TextNodes based on links
+# Splits raw markdown into TextNodes based on links
+# Links in markdown follow [anchor text](url)
 def split_nodes_link(old_nodes: list[TextNode]) -> list[TextNode]:
-    #will be nearly identical to the function above
-    pass
+    new_nodes = []
+    for node in old_nodes:
+        remaining_text = node.text
+        links = extract_markdown_links(remaining_text)
 
+        #if no link, return a list with the original node in it
+        if len(links) == 0:
+            new_nodes.append(node)
+            continue
+
+        #if not plaintext, then just append the node
+        if node.text_type != TextType.PLAIN:
+            new_nodes.append(node)
+            continue
+
+        for link in links:
+            anchor_text = link[0]
+            url = link[1]
+            md_delimiter = f"[{anchor_text}]({url})" #the delimiter markdown has to be assembled
+            split_node = remaining_text.split(f"{md_delimiter}", 1) #this will return everything around the markdown, length is always 2
+
+            # create node and append it if preceding text exists
+            if split_node[0] != "":
+                node_h = TextNode(split_node[0], TextType.PLAIN)
+                new_nodes.append(node_h)
+            # the new link node should be created and appended
+            node_i = TextNode(anchor_text, TextType.LINK, url)
+            new_nodes.append(node_i)
+            remaining_text = split_node[1] #vital step
+
+        #any remaining_text is appended after the inner loop finishes
+        if remaining_text != "":
+            node_j = TextNode(remaining_text, TextType.PLAIN)
+            new_nodes.append(node_j)
+
+    return new_nodes
+
+def text_to_textnodes(text: str) -> list[TextNode]:
+    new_nodes = [TextNode(text, TextType.PLAIN)]
+    new_nodes = split_nodes_delimiter(new_nodes, "**", TextType.BOLD)
+    new_nodes = split_nodes_delimiter(new_nodes, "_", TextType.ITALIC)
+    new_nodes = split_nodes_delimiter(new_nodes, "`", TextType.CODE)
+    new_nodes = split_nodes_image(new_nodes)
+    new_nodes = split_nodes_link(new_nodes)
+    return new_nodes
