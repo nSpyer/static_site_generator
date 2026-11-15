@@ -1,7 +1,13 @@
 import unittest
-from inline_markdown import split_nodes_delimiter, extract_markdown_images, split_nodes_image, extract_markdown_links, text_to_textnodes
+from inline_markdown import (split_nodes_delimiter, 
+        extract_markdown_images, 
+        split_nodes_image, 
+        extract_markdown_links,
+        split_nodes_link,
+        text_to_textnodes,
+)
 from textnode import TextNode, TextType
-
+from htmlnode import HTMLNode
 
 class TestSplitNodesDelimiter(unittest.TestCase):
 
@@ -87,26 +93,39 @@ class TestSplitNodesDelimiter(unittest.TestCase):
         new_nodes = split_nodes_delimiter(old_node, "`", TextType.CODE)
         self.assertEqual(correct_result, new_nodes)
 
-# test that a node that's already a non-TEXT type passes through unchanged
-    def test_non_text_node(self):
-        pass
-
-#test multiple nodes in the input, where only some are TEXT type
-    def test_mixed_node_types(self):
-        pass
-
-# test text with no delimiters at all remain unchanged as a single node
+# test text with no delimiters at all remains unchanged as a single node
     def test_no_delimiters(self):
-        pass
+        node = TextNode("text with no delimiters", TextType.PLAIN)
+        node_split = split_nodes_delimiter([node], '**', TextType.BOLD)
+        self.assertEqual(node, node_split[0])
+
 
 #test unmatched/missing closing delimiter raises an exception
     def test_exception_for_unmatched_closing_delimiter(self):
-        pass
+        text = "This is text with an **unmatched closing delimiter."
+        old_node = [TextNode(text, TextType.PLAIN)]
+        with self.assertRaises(ValueError):
+            split_node = split_nodes_delimiter(old_node, "**", TextType.BOLD)
 
 #test an input list with multiple old nodes, checkin the new list properly combines
     #the results of each
     def test_mutltiple_old_nodes(self):
-        pass
+        text_a = "This is **text A**."
+        text_b = "This is **text B**."
+        old_node_a = TextNode(text_a, TextType.PLAIN)
+        old_node_b = TextNode(text_b, TextType.PLAIN)
+        old_nodes = [old_node_a, old_node_b]
+        split_nodes = split_nodes_delimiter(old_nodes, "**", TextType.BOLD)
+        correct_nodes = [
+            TextNode("This is ", TextType.PLAIN),
+            TextNode("text A", TextType.BOLD),
+            TextNode(".", TextType.PLAIN),
+            TextNode("This is ", TextType.PLAIN),
+            TextNode("text B", TextType.BOLD),
+            TextNode(".", TextType.PLAIN),
+        ]
+        self.assertListEqual(split_nodes, correct_nodes)
+
 
 class TestRegex(unittest.TestCase):
     # tests that the extraction function for markdown image text returns the correct tuple
@@ -148,33 +167,28 @@ class TestSplitNodesImage(unittest.TestCase):
         node_md = TextNode("This text has no images!", TextType.PLAIN)
         old_nodes = [node_md]
         return_nodes = split_nodes_image(old_nodes)
-        self.assertEqual(return_nodes[0], node_md)
+        self.assertEqual(return_nodes[0], node_md) 
 
-    def test_image_at_start_of_text(self): #proven true with test_single_image_test
+    #if an image has no alt text, it is technically valid and considered decorative
+    def test_for_empty_image_alt_text(self):
         pass
 
-    def test_image_at_end_of_text(self): #proven true with test_single_image_test
-        pass
-
-    def test_only_image_text(self): #proven true with test_single_image test
-        pass
-
-    def test_for_empty_alt_text(self):
-        pass
-
-    def test_multiple_nodes_at_once(self): # a list with more than one text node
-        pass
-
-    def test_node_that_is_not_text_type_text(self): #should not even be processed
-        pass
-
-    def test_links_vs_images(self): #include both a markdown image and a markdown link, and ensure the function
+        #include both a markdown image and a markdown link, and ensure the function
         #only grabs what it should
-        pass
-
-    #same but use the opposite TextType as above
     def test_images_vs_links(self):
-        pass
+        text = "This is an ![image](https://www.google.com/image.png) and this is a [link](https://www.google.com)."
+        node = [TextNode(text, TextType.PLAIN)]
+        split_nodes = split_nodes_image(node)
+        correct_nodes = [
+            TextNode("This is an ", TextType.PLAIN),
+            TextNode("image", TextType.IMAGE, "https://www.google.com/image.png"),
+            TextNode(" and this is a [link](https://www.google.com).", TextType.PLAIN),
+        ]
+        self.assertEqual(split_nodes, correct_nodes)
+
+
+
+class TestTextToTextNodes(unittest.TestCase):
 
     def test_text_to_textnodes(self):
         md_text = "This is **text** with an _italic_ word and a `code block` and an ![obi wan image](https://i.imgur.com/fJRm4Vk.jpeg) and a [link](https://boot.dev)"
@@ -192,3 +206,50 @@ class TestSplitNodesImage(unittest.TestCase):
                 TextNode("link", TextType.LINK, "https://boot.dev"),
                 ]
         self.assertEqual(return_nodes, correct_result)
+
+
+
+class TestSplitNodesLink(unittest.TestCase):
+    # link format for markdown is [alt_text](url)
+    def test_single_link(self):
+        node_md = TextNode("[This is anchor text](https://www.google.com)", TextType.PLAIN)
+        old_nodes = [node_md]
+        return_node = split_nodes_link(old_nodes)
+        node_a = TextNode("This is anchor text", TextType.LINK, "https://www.google.com")
+        self.assertEqual(return_node[0], node_a)
+
+    def test_multiple_links(self):
+        node_md = TextNode("This is one link: [This is anchor text](https://www.google.com) and this is another: [This is also anchor text](https://www.boot.dev)", TextType.PLAIN)
+        old_nodes = [node_md]
+        return_nodes = split_nodes_link(old_nodes)
+        node_a = TextNode("This is one link: ", TextType.PLAIN)
+        node_b = TextNode("This is anchor text", TextType.LINK, "https://www.google.com")
+        node_c = TextNode(" and this is another: ", TextType.PLAIN)
+        node_d = TextNode("This is also anchor text", TextType.LINK, "https://www.boot.dev")
+        new_nodes = [node_a, node_b, node_c, node_d]
+        self.assertEqual(return_nodes, new_nodes)
+
+    #test markdown test with no images to extract, should return original node unchanged
+    def test_text_with_no_links(self):
+        node_md = TextNode("This text has no links!", TextType.PLAIN)
+        old_nodes = [node_md]
+        return_nodes = split_nodes_link(old_nodes)
+        self.assertEqual(return_nodes[0], node_md) 
+
+    #if an image has no alt text, it is technically valid and considered decorative
+    def test_for_empty_link_anchor_text(self):
+        pass
+
+        #include both a markdown image and a markdown link, and ensure the function
+        #only grabs what it should
+    def test_links_vs_images(self): 
+        text = "This is an ![image](https://www.google.com/image.png) and this is a [link](https://www.google.com)."
+        node = [TextNode(text, TextType.PLAIN)]
+        split_nodes = split_nodes_link(node)
+        correct_nodes = [
+            TextNode("This is an ![image](https://www.google.com/image.png) and this is a ", TextType.PLAIN),
+            TextNode("link", TextType.LINK, "https://www.google.com"),
+            TextNode(".", TextType.PLAIN),
+        ]
+        self.assertEqual(split_nodes, correct_nodes)
+

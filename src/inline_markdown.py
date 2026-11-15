@@ -19,7 +19,7 @@ def split_nodes_delimiter(old_nodes: list[TextNode], delimiter: str, text_type: 
  
         # a correctly split node will always have an odd number of text strings in the list before empty strings are pruned
         if len(split_node) % 2 == 0:
-            raise Exception("delimiter error: matching closing delimiter not found")
+            raise ValueError("Invalid Markdown: Unmatched closing delimiter")
             
             #create and append
             # even indexed strings become TextNode(string, TextType.PLAIN)
