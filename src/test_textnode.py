@@ -1,5 +1,6 @@
 import unittest
 from textnode import TextNode, TextType, text_node_to_html_node
+from htmlnode import LeafNode
 
 
 class TestTextNode(unittest.TestCase):
@@ -31,42 +32,71 @@ class TestTextNode(unittest.TestCase):
         node2 = TextNode("This is a text node", TextType.PLAIN, "https://www.boot.dev")
 
 class TestTextNodeToHTMLNode(unittest.TestCase):
-    
-    #TextType.PLAIN -> LeafNode(None, text)
+ 
+    # Test that TextType.PLAIN -> LeafNode(None, text)
     def test_plain_text(self):
-        node = TextNode("This is a text node", TextType.PLAIN)
+        node = TextNode("This is a PLAIN node", TextType.PLAIN)
         html_node = text_node_to_html_node(node)
         self.assertEqual(html_node.tag, None)
-        self.assertEqual(html_node.value, "This is a text node")
-    
-    # TextType.Bold -> LeafNode("b", text)
+        self.assertEqual(html_node.value, "This is a PLAIN node")
+
+    # Test that TextType.Bold -> LeafNode("b", text)
     def test_bold(self):
-    # TODO: TextType.BOLD -> LeafNode("b", text)
-        pass
+        text = "This is a BOLD node"
+        node = TextNode(text, TextType.BOLD)
+        html_node = text_node_to_html_node(node)
+        correct_node = LeafNode("b", "This is a BOLD node")
+        self.assertEqual(html_node.tag, "b")
+        self.assertEqual(html_node.value, correct_node.value)
 
+    # Test that TextType.ITALIC -> LeafNode("i", text)
     def test_italic(self):
-        # TODO: TextType.ITALIC -> LeafNode("i", text)
-        pass
-
+        text = "This is an ITALIC node"
+        node = TextNode(text, TextType.ITALIC)
+        html_node = text_node_to_html_node(node)
+        correct_node = LeafNode("i", "This is an ITALIC node")
+        self.assertEqual(html_node.tag, "i")
+        self.assertEqual(html_node.value, correct_node.value)
+ 
+    # TextType.CODE -> LeafNode("code", text)
     def test_code(self):
-        # TODO: TextType.CODE -> LeafNode("code", text)
-        pass
+        text = "This is a CODE node"
+        node = TextNode(text, TextType.CODE)
+        html_node = text_node_to_html_node(node)
+        correct_node = LeafNode("code", "This is a CODE node")
+        self.assertEqual(html_node.tag, "code")
+        self.assertEqual(html_node.value, correct_node.value)
 
+    # TextType.LINK -> LeafNode("a", anchor_text, {"href": url})
+    # check html_node.props["href"] == url
     def test_link(self):
-        # TODO: TextType.LINK -> LeafNode("a", anchor_text, {"href": url})
-        # check html_node.props["href"] == url
-        pass
+        text = "This is anchor text"
+        url = "https://www.google.com"
+        link_node = TextNode(text, TextType.LINK, url)
+        html_node = text_node_to_html_node(link_node)
+        correct_node = LeafNode("a", text, {"href":f"{url}"})
+        self.assertEqual(html_node.tag, "a")
+        self.assertEqual(html_node.value, correct_node.value)
+        self.assertEqual(html_node.props, correct_node.props)
 
+    # TextType.IMAGE -> LeafNode("img", "", {"src": url, "alt": alt_text})
+    # check html_node.value == "" and props contain both src and alt
     def test_image(self):
-        # TODO: TextType.IMAGE -> LeafNode("img", "", {"src": url, "alt": alt_text})
-        # check html_node.value == "" and props contain both src and alt
-        pass
+        text = "This is alt text"
+        url = "https://www.google.com/image.png"
+        link_node = TextNode(text, TextType.IMAGE, url)
+        html_node = text_node_to_html_node(link_node)
+        correct_node = LeafNode("img", "", {"src":f"{url}", "alt":f"{text}"})
+        self.assertEqual(html_node.tag, "img")
+        self.assertEqual(html_node.value, correct_node.value)
+        self.assertEqual(html_node.props, correct_node.props)
 
+    # Test that a text node with an invalid type raises an exception
     def test_invalid_type_raises(self):
-        # TODO: construct a TextNode-like object/mock with an invalid text_type
-        # or monkeypatch text_type, assert raises Exception
-        pass
-
+        text = "MMMmmm. Muffins."
+        with self.assertRaises(Exception):
+            invalid_node = TextNode(text, TextType.MUFFINS)
+            text_node_to_html_node(invalid_node)
 
 
 if __name__ == "__main__":
