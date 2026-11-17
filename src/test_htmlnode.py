@@ -109,23 +109,3 @@ class TestHTMLNode(unittest.TestCase):
         child_node_b = LeafNode("i", "italic")
         parent_node = ParentNode("div", [child_node_a, child_node_b])
         self.assertEqual(parent_node.to_html(), "<div><b>bold</b><i>italic</i></div>")
-
-    #test html conversion of a parent_node with both LeafNode and ParentNode
-    # instances as direct siblings in its children
-    def test_parent_and_leaf(self):
-        pass
-
-    #missing tag validation - verify that calling .to_html() raises a ValueError when
-    #tag is None or an empty string using assertRaises(ValueError)
-    def test_tag_validation(self):
-        pass
-
-    #missing children validation = verify calling .to_html() raises a ValueError when
-    # children is None
-    def test_missing_children(self):
-        pass
-
-    # nodes w/ props - a parentnode initialized with a props dict
-    # ensures HTML attributes render correclty on the parent tag alongside its children
-    def test_nodes_with_props(self):
-        pass
